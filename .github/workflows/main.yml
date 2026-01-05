@@ -1,10 +1,10 @@
-name: Linux XFCE Desktop
+name: Linux VNC (Stable)
 
 on:
   workflow_dispatch:
 
 jobs:
-  linux-xfce:
+  vnc:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
@@ -13,12 +13,11 @@ jobs:
       run: |
         sudo apt update
 
-    - name: Install XFCE + dependencies
+    - name: Install VNC + X utilities
       run: |
         sudo apt install -y \
-          xfce4 xfce4-goodies \
           tigervnc-standalone-server tigervnc-common \
-          dbus-x11 x11-xserver-utils xterm
+          xterm x11-xserver-utils dbus-x11
 
     - name: Setup VNC password
       run: |
@@ -26,18 +25,13 @@ jobs:
         echo -e "github\ngithub\n" | vncpasswd -f > ~/.vnc/passwd
         chmod 600 ~/.vnc/passwd
 
-    - name: Configure XFCE xstartup (FIXED)
+    - name: Create xstartup (STABLE)
       run: |
         cat << 'EOF' > ~/.vnc/xstartup
         #!/bin/sh
         unset SESSION_MANAGER
         unset DBUS_SESSION_BUS_ADDRESS
-
-        export XDG_RUNTIME_DIR=/tmp/runtime-runner
-        mkdir -p $XDG_RUNTIME_DIR
-        chmod 700 $XDG_RUNTIME_DIR
-
-        exec dbus-launch --exit-with-session startxfce4 &
+        exec xterm &
         EOF
         chmod +x ~/.vnc/xstartup
 
@@ -53,21 +47,21 @@ jobs:
       run: |
         sudo tailscale up \
           --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} \
-          --hostname=gh-linux-xfce-${{ github.run_id }}
+          --hostname=gh-linux-vnc-${{ github.run_id }}
 
     - name: Show connection info
       run: |
         echo "======================================"
-        echo "XFCE Desktop is running"
-        echo "VNC Port : 5901"
-        echo "VNC Pass : github"
-        echo "Tailscale IP:"
+        echo "VNC READY (xterm only)"
+        echo "Port     : 5901"
+        echo "Password : github"
+        echo "IP       :"
         tailscale ip -4
         echo "======================================"
 
     - name: Keep runner alive
       run: |
         while true; do
-          echo "[INFO] XFCE session active..."
+          echo "[INFO] VNC session running..."
           sleep 300
         done
