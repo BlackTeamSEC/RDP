@@ -13,13 +13,12 @@ jobs:
       run: |
         sudo apt update
 
-    - name: Install XFCE desktop
+    - name: Install XFCE + dependencies
       run: |
-        sudo apt install -y xfce4 xfce4-goodies dbus-x11
-
-    - name: Install TigerVNC
-      run: |
-        sudo apt install -y tigervnc-standalone-server tigervnc-common
+        sudo apt install -y \
+          xfce4 xfce4-goodies \
+          tigervnc-standalone-server tigervnc-common \
+          dbus-x11 x11-xserver-utils xterm
 
     - name: Setup VNC password
       run: |
@@ -27,13 +26,18 @@ jobs:
         echo -e "github\ngithub\n" | vncpasswd -f > ~/.vnc/passwd
         chmod 600 ~/.vnc/passwd
 
-    - name: Configure XFCE session
+    - name: Configure XFCE xstartup (FIXED)
       run: |
         cat << 'EOF' > ~/.vnc/xstartup
         #!/bin/sh
         unset SESSION_MANAGER
         unset DBUS_SESSION_BUS_ADDRESS
-        exec startxfce4 &
+
+        export XDG_RUNTIME_DIR=/tmp/runtime-runner
+        mkdir -p $XDG_RUNTIME_DIR
+        chmod 700 $XDG_RUNTIME_DIR
+
+        exec dbus-launch --exit-with-session startxfce4 &
         EOF
         chmod +x ~/.vnc/xstartup
 
@@ -53,12 +57,13 @@ jobs:
 
     - name: Show connection info
       run: |
-        echo "=================================="
-        echo "XFCE Linux Desktop Ready"
-        echo "VNC Address: <TAILSCALE_IP>:5901"
-        echo "VNC Password: github"
-        echo "=================================="
+        echo "======================================"
+        echo "XFCE Desktop is running"
+        echo "VNC Port : 5901"
+        echo "VNC Pass : github"
+        echo "Tailscale IP:"
         tailscale ip -4
+        echo "======================================"
 
     - name: Keep runner alive
       run: |
