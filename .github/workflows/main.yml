@@ -1,4 +1,4 @@
-name: Linux VNC (Stable)
+name: Linux VNC (GitHub Runner - Stable)
 
 on:
   workflow_dispatch:
@@ -13,31 +13,22 @@ jobs:
       run: |
         sudo apt update
 
-    - name: Install VNC + X utilities
+    - name: Install VNC and xterm
       run: |
         sudo apt install -y \
           tigervnc-standalone-server tigervnc-common \
-          xterm x11-xserver-utils dbus-x11
+          xterm
 
-    - name: Setup VNC password
+    - name: Set VNC password
       run: |
         mkdir -p ~/.vnc
         echo -e "github\ngithub\n" | vncpasswd -f > ~/.vnc/passwd
         chmod 600 ~/.vnc/passwd
 
-    - name: Create xstartup (STABLE)
+    - name: Start VNC server (NO xstartup)
       run: |
-        cat << 'EOF' > ~/.vnc/xstartup
-        #!/bin/sh
-        unset SESSION_MANAGER
-        unset DBUS_SESSION_BUS_ADDRESS
-        exec xterm &
-        EOF
-        chmod +x ~/.vnc/xstartup
-
-    - name: Start VNC server
-      run: |
-        vncserver -localhost no :1
+        vncserver -kill :1 || true
+        vncserver -localhost no :1 -xstartup /usr/bin/xterm
 
     - name: Install Tailscale
       run: |
@@ -49,19 +40,19 @@ jobs:
           --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} \
           --hostname=gh-linux-vnc-${{ github.run_id }}
 
-    - name: Show connection info
+    - name: Connection info
       run: |
         echo "======================================"
         echo "VNC READY (xterm only)"
         echo "Port     : 5901"
         echo "Password : github"
-        echo "IP       :"
+        echo "IP:"
         tailscale ip -4
         echo "======================================"
 
     - name: Keep runner alive
       run: |
         while true; do
-          echo "[INFO] VNC session running..."
+          echo "[INFO] VNC session active..."
           sleep 300
         done
